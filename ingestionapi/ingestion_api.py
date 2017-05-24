@@ -24,7 +24,7 @@ class DefaultSettings(object):
     REDIS_PORT = os.environ.get('REDIS_PORT') or 6379
     MAX_DUMMY_MSG_LENGTH = os.environ.get('MAX_DUMMY_MSG_LENGTH') or 1000
 
-app.config.from_object('app.DefaultSettings')
+app.config.from_object('ingestion_api.DefaultSettings')
 
 redis_clients = []
 

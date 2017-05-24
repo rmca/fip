@@ -48,7 +48,8 @@ def list_dummy_records():
 
     # Drop the last result from here since that's only used to compute the next
     # token.
-    result_set = result_set[0:-1]
+    if len(result_set) > COUNT_VALUE:
+        result_set = result_set[0:-1]
     count = len(result_set)
     results = {
         'results': result_set, 'count': count, 'next': next_token

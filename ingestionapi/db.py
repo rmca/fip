@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root@127.0.0.1:5306/falcon'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root@mysql:3306/falcon'
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)

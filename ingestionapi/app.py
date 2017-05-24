@@ -35,7 +35,7 @@ def make_redis_client():
     r = redis.StrictRedis(host=app.config['REDIS_HOST'],
                           port=app.config['REDIS_PORT'])
     p = r.pubsub()
-    p.subscribe(REDIS_TOPIC)
+    p.subscribe(app.config['REDIS_TOPIC'])
     return r
 
 
@@ -84,7 +84,8 @@ def create_dummy():
             {'Content-Type': 'application/json'})
 
     try:
-        get_redis_client().publish(REDIS_TOPIC, request.form['data'])
+        get_redis_client().publish(app.config['REDIS_TOPIC'],
+                                   request.form['data'])
     except redis.exceptions.RedisError:
         # TODO: output a log here.
         # We don't care about pubsub exceptions,

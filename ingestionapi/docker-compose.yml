@@ -1,0 +1,58 @@
+version: '2'
+services:
+    ingestionapi:
+        build:
+            context: .
+            dockerfile: Dockerfile-ingestion
+#        command: sh run_ingestion.sh
+        volumes:
+            - .:/code
+        ports:
+            - "6000:5000"
+        depends_on:
+            - redis
+        # TODO: make the below go away when we refactor
+        # to remove the db.py/tasks.py dependency
+            - mysql
+    listapi:
+        build:
+            context: .
+            dockerfile: Dockerfile-listapi
+        # command: sh run_list.sh
+        volumes:
+            - .:/code
+        ports:
+            - "7000:5000"
+        depends_on:
+            - mysql
+    celery:
+        build:
+            context: .
+            dockerfile: Dockerfile-celery
+        command: celery -E -A tasks worker
+        volumes:
+            - .:/code
+        depends_on:
+            - mysql
+            - redis
+    redis:
+        image: redis
+        ports:
+            - "7379:6379"
+    mysql:
+        image: mysql
+        environment:
+            - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+            - MYSQL_DATABASE=falcon
+        ports:
+            - "5306:3306"
+    wsserver:
+        build:
+            context: .
+            dockerfile: Dockerfile-wsserver
+        volumes:
+            - .:/code
+        depends_on:
+            - redis
+        ports:
+            - "8765:8765"

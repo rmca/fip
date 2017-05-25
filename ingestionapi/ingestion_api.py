@@ -59,6 +59,13 @@ MAX_DATA_SIZE = 1002
 SERVICE_UNAVAILABLE = 2000
 
 
+def make_error_response(msg, code, status):
+    return make_response(json.dumps(
+        {'error': msg,
+         'code': code}), status,
+        {'Content-Type': 'application/json'})
+
+
 @app.route('/dummy', methods=['POST'])
 @auto.doc()
 def create_dummy():
@@ -68,20 +75,17 @@ def create_dummy():
         data = json.loads(request.form['data'])
         enqueue_task(request.form['data'])
     except KeyError:
-        return make_response(json.dumps(
-            {'error': "Missing data field",
-             'code': MISSING_FIELD}), 400,
-            {'Content-Type': 'application/json'})
+        return make_error_response(
+                "Missing data field", MISSING_FIELD, 400
+        )
     except ValueError:
-        return make_response(json.dumps(
-            {'error': "Invalid JSON", 'code': INVALID_JSON}), 400,
-            {'Content-Type': 'application/json'})
+        return make_error_response(
+                "Invalid JSON", INVALID_JSON, 400
+        )
     except (circuitbreaker.CircuitBreakerError, kombu.exceptions.KombuError):
-        return make_response(
-            json.dumps(
-                {'error': "Service Unavailable", 'code': SERVICE_UNAVAILABLE}
-            ), 503,
-            {'Content-Type': 'application/json'})
+        return make_error_response(
+                "Service Unavailable", SERVICE_UNAVAILABLE, 503
+        )
 
     try:
         get_redis_client().publish(app.config['REDIS_TOPIC'],

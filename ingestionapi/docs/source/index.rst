@@ -14,7 +14,11 @@ Welcome to design's documentation!
 Getting Started
 ===============
 
-To spin up the solution you can run: docker-compose up
+To spin up the solution you first run: 
+
+.. code-block:: bash
+
+  docker-compose up
 
 Then to create the database you need to run a few commands on the
 Ingestion API or List API containers. The following commands are needed:
@@ -37,6 +41,14 @@ For instance:
 
   docker exec ingestionapi_listapi_1 flask db upgrade
 
+Alternatively you can use the provided database dump to create the necessary tables:
+
+.. code-block:: bash
+
+  mysql -h 127.0.0.1 -P 5306 -p -u root -e 'create database falcon'
+  mysql -h 127.0.0.1 -P 5306 -p -u root falcon < db.sql
+
+
 To run tests you can install the requirements and then run nosetests like so:
 
 .. code-block:: bash
@@ -52,6 +64,9 @@ To create some messages and see them arrive at the REST API and HTML page, you c
 .. code-block:: bash
 
   python scripts/end_to_end.py
+
+That should be enough to get you started. See the rest of the docs for more
+information on the code.
 
 Requirements
 ============

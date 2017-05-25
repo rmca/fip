@@ -6,9 +6,9 @@ import json
 import uuid
 import os
 import time
-import structlog
 import socket
 
+import structlog
 
 broker = os.environ.get('TASK_BROKER', 'redis://redis:6379/0')
 app = Celery('tasks', broker=broker)
@@ -29,9 +29,8 @@ def add(txt, timefunc=time.time, uuidfunc=lambda: uuid.uuid4().hex):
         db.session.commit()
     except IntegrityError:
         # Task was maybe retried and had already succeeded
-        # Allow the execution to succeed.
+        # Rollback and allow the execution to succeed.
         db.session.rollback()
-        pass
     except SQLAlchemyError as e:
         logger.info(task_failed=1, hostname=hostname, exception=str(e))
         raise

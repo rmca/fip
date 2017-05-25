@@ -1,4 +1,9 @@
-import app
+import tempfile
+import os
+
+import ingestion_api
+import list_api
+import tasks
 
 import circuitbreaker
 import kombu
@@ -16,11 +21,11 @@ class BaseTests(unittest.TestCase):
     """
 
     def setUp(self):
-        self.patch_redis = patch('app.get_redis_client')
+        self.patch_redis = patch('ingestion_api.get_redis_client')
         self.mock_redis = self.patch_redis.start()
-        self.patch_celery = patch('app.enqueue_task')
+        self.patch_celery = patch('ingestion_api.enqueue_task')
         self.mock_celery = self.patch_celery.start()
-        self.client = app.app.test_client()
+        self.client = ingestion_api.app.test_client()
 
     def tearDown(self):
         self.patch_redis.stop()
@@ -91,6 +96,125 @@ class CreateDummyServerErrors(BaseTests):
         self.mock_celery.side_effect = kombu.exceptions.KombuError
         actual = self.client.post('/dummy', data={'data': dummy_data})
         self.assertHTTPErrorWithJSONResponse(actual, 503, 2000)
+
+
+class BaseListTests(unittest.TestCase):
+
+    def setUp(self):
+        list_api.app.config['TESTING'] = True
+        with list_api.app.app_context():
+            list_api.db.drop_all()
+            list_api.db.create_all()
+        self.client = list_api.app.test_client()
+
+    def make_record(self, timestamp, message_id, record):
+        rec = list_api.Records(timestamp=timestamp,
+                               message_id=message_id,
+                               record=record)
+        with list_api.app.app_context():
+            list_api.db.session.add(rec)
+            list_api.db.session.commit()
+        return {'timestamp': timestamp, 'message_id': message_id,
+                'data': record}
+
+
+class ListTestsEmpty(BaseListTests):
+
+    def test_list_empty_db(self):
+        recs = self.client.get('/records')
+        self.assertEqual(recs.status_code, 200)
+        actual = json.loads(recs.data)
+        self.assertEqual(actual['count'], 0)
+        self.assertEqual(actual['results'], [])
+        self.assertEqual(actual['next'], None)
+
+    def test_create_single_record_and_list(self):
+        r = self.make_record(timestamp=0, message_id='test', record='foo')
+        recs = self.client.get('/records')
+        self.assertEqual(recs.status_code, 200)
+        actual = json.loads(recs.data)
+        self.assertEqual(actual['count'], 1)
+        self.assertEqual(actual['results'], [r])
+
+    def test_create_multiple_record_and_list_sequential(self):
+        created = set()
+        seen = set()
+        for i in range(20):
+            r = self.make_record(timestamp=i,
+                                 message_id='test %d' % i,
+                                 record='foo')
+            created.add(r['message_id'])
+        recs = self.client.get('/records')
+        self.assertEqual(recs.status_code, 200)
+        actual = json.loads(recs.data)
+        self.assertEqual(actual['count'], 10)
+        for r in actual['results']:
+            seen.add(r['message_id'])
+
+        recs2 = self.client.get('/records?next=%s' % actual['next'])
+        self.assertEqual(recs2.status_code, 200)
+        actual2 = json.loads(recs2.data)
+        self.assertEqual(actual2['count'], 10)
+        for r in actual2['results']:
+            seen.add(r['message_id'])
+
+        self.assertEqual(seen, created)
+
+    def test_create_multiple_record_and_list_timestamp_static(self):
+        created = set()
+        seen = set()
+        for i in range(20):
+            r = self.make_record(timestamp=0,
+                                 message_id='test %d' % i,
+                                 record='foo')
+            created.add(r['message_id'])
+        recs = self.client.get('/records')
+        self.assertEqual(recs.status_code, 200)
+        actual = json.loads(recs.data)
+        self.assertEqual(actual['count'], 10)
+
+        for r in actual['results']:
+            seen.add(r['message_id'])
+
+        recs2 = self.client.get('/records?next=%s' % actual['next'])
+        self.assertEqual(recs2.status_code, 200)
+        actual2 = json.loads(recs2.data)
+        self.assertEqual(actual2['count'], 10)
+        for r in actual2['results']:
+            seen.add(r['message_id'])
+        self.assertEqual(seen, created)
+
+
+def time_func():
+    return 1
+
+
+def uuid_func():
+    return 'a'
+
+
+class TasksTests(BaseListTests):
+
+    def test_add_success(self):
+        with list_api.app.app_context():
+            self.assertIsNone(tasks.add('foo'))
+            res = tasks.db.session.query(tasks.Records.record)
+            results = res.all()
+            for r in results:
+                self.assertEqual(r.record, 'foo')
+            self.assertEqual(len(results), 1)
+
+    def test_add_dupe_only_stores_single_task(self):
+        with list_api.app.app_context():
+            self.assertIsNone(tasks.add('foo', timefunc=time_func,
+                              uuidfunc=uuid_func))
+            self.assertIsNone(tasks.add('foo', timefunc=time_func,
+                              uuidfunc=uuid_func))
+            res = tasks.db.session.query(tasks.Records.record)
+            results = res.all()
+            for r in results:
+                self.assertEqual(r.record, 'foo')
+            self.assertEqual(len(results), 1)
 
 
 class TestCodeFormat(unittest.TestCase):

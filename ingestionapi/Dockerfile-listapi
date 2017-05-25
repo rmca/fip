@@ -3,7 +3,7 @@ ENV PYTHONUNBUFFERED 1
 ENV FLASK_APP "/code/list_api.py"
 RUN mkdir /code
 WORKDIR /code
-ADD requirements.txt /code/
-RUN pip install -r requirements.txt
+ADD requirements-listapi.txt /code/
+RUN pip install -r requirements-listapi.txt
 ADD . /code/
 CMD ["flask", "run", "--host", "0.0.0.0"]

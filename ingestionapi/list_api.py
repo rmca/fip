@@ -1,8 +1,14 @@
 import json
 import os
+import time
 
 from flask import request, make_response
 from db import app, db, Records
+
+import structlog
+
+
+logger = structlog.get_logger()
 
 
 COUNT_VALUE = int(os.environ.get('COUNT_VALUE', 10))
@@ -25,6 +31,7 @@ def list_dummy_records():
     - message_id: A UUID to uniquely identify the message
     - data: The JSON encoded message.
     """
+    _t_start = time.time()
     timestamp = None
     message_id = None
     try:
@@ -37,6 +44,7 @@ def list_dummy_records():
             {"error": "Invalid next token", "code": 1100}), 400,
             {"Content-Type": 'application/json'})
 
+    _t_start2 = time.time()
     if timestamp is not None and message_id is not None:
         records = db.session.query(Records).from_statement(
             db.text(
@@ -57,6 +65,7 @@ def list_dummy_records():
              'data': r.record}
             for r in records
     ]
+    logger.info("records.sql.duration", duration=time.time()-_t_start2)
 
     try:
         next_token = "_".join([str(result_set[-1]['timestamp']),
@@ -71,6 +80,8 @@ def list_dummy_records():
     results = {
         'results': result_set, 'count': count, 'next': next_token
     }
+    # For want of a better way, output a metric.
+    logger.info("records.duration", duration=time.time()-_t_start, count=1)
     return make_response(
             json.dumps(results), 200,
             {'Content-Type': 'application/json'})

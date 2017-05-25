@@ -4,16 +4,20 @@ import kombu
 import redis
 
 import circuitbreaker
+import structlog
+
 from circuitbreaker import circuit, CircuitBreakerMonitor
 
 from tasks import add
 
 import json
 import os
+import time
 
 app = Flask(__name__)
 auto = Autodoc(app)
 
+logger = structlog.get_logger()
 
 # Config
 
@@ -79,6 +83,7 @@ def create_dummy():
     create_api = 'http://127.0.0.1:6000/dummy'
     requests.post(create_api, data={'data': json.dumps({'testdatum': 'a'})})
     """
+    _t_start = time.time()
     try:
         data = json.loads(request.form['data'])
         enqueue_task(request.form['data'])
@@ -104,6 +109,7 @@ def create_dummy():
         # those messages are best-effort anyway.
         pass
 
+    logger.info("create_dummy", duration=time.time()-_t_start)
     return make_response(
             json.dumps({'success': True}), 202,
             {'Content-Type': 'application/json'})

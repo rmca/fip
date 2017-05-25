@@ -17,6 +17,9 @@ logger = get_logger()
 
 
 def get_host_details():
+    """
+    Take config from the environment
+    """
     host = os.environ.get('REDIS_HOST', 'redis')
     port = int(os.environ.get('REDIS_PORT', 6379))
     topic = os.environ.get('REDIS_TOPIC', 'blah')
@@ -28,7 +31,7 @@ async def read_from_pubsub():
     connection = await asyncio_redis.Connection.create(host=host, port=port)
     subscriber = await connection.start_subscribe()
     await subscriber.subscribe([topic])
-    logger.info("Initialized Redis")
+    logger.info("Initialized Redis. Entering message loop")
 
     while True:
         reply = await subscriber.next_published()

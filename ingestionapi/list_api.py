@@ -12,7 +12,18 @@ COUNT_VALUE = int(os.environ.get('COUNT_VALUE', 10))
 def list_dummy_records():
     """
     List dummy records by paging through them.
-    TODO: better documentation.
+
+    The return value is a dictionary containing:
+    - results: A list of result dictionaries
+    - next: A token to use to retrieve the next page
+            via the "next" URL parameter
+    - count: The number of results
+
+    A result dictionary consists of:
+    - timestamp: Corresponds to (roughly) when the record
+                 was written to the DB
+    - message_id: A UUID to uniquely identify the message
+    - data: The JSON encoded message.
     """
     timestamp = None
     message_id = None

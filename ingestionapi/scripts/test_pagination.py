@@ -19,16 +19,16 @@ import time
 next_tok = None
 count = 0
 
-maxdur = None
+maxdur = 0
 total = 0
 mindur = None
 
 while True:
     start = time.time()
     if next_tok is None:
-        r = requests.get("http://127.0.0.1:5000/records")
+        r = requests.get("http://127.0.0.1:7000/records")
     else:
-        r = requests.get("http://127.0.0.1:5000/records?next=%s" % next_tok)
+        r = requests.get("http://127.0.0.1:7000/records?next=%s" % next_tok)
     diff = time.time() - start
     maxdur = max(diff, maxdur)
     if mindur is None:

@@ -29,17 +29,24 @@ def list_dummy_records():
     if timestamp is not None and message_id is not None:
         records = db.session.query(Records).from_statement(
             db.text(
-                "SELECT * FROM records WHERE timestamp = :timestamp and message_id = :message_id" \
-                " ORDER BY timestamp, message_id LIMIT :count"
-            ).params(timestamp=timestamp, message_id=message_id, count=COUNT_VALUE+1))
+                "SELECT * FROM records WHERE timestamp >= :timestamp and "
+                "message_id >= :message_id "
+                "ORDER BY timestamp, message_id LIMIT :count"
+            ).params(timestamp=timestamp, message_id=message_id,
+                     count=COUNT_VALUE+1))
     else:
         records = db.session.query(Records).from_statement(
             db.text(
-                "SELECT * FROM records ORDER BY timestamp, message_id LIMIT :count"
+                "SELECT * FROM records ORDER BY "
+                "timestamp, message_id LIMIT :count"
                 ).params(count=COUNT_VALUE+1))
 
-    result_set = [{'timestamp': r.timestamp, 'message_id': r.message_id, \
-                   'data': r.record} for r in records]
+    result_set = [
+            {'timestamp': r.timestamp, 'message_id': r.message_id,
+             'data': r.record}
+            for r in records
+    ]
+
     try:
         next_token = "_".join([str(result_set[-1]['timestamp']),
                                result_set[-1]['message_id']])
@@ -48,11 +55,11 @@ def list_dummy_records():
 
     # Drop the last result from here since that's only used to compute the next
     # token.
-    if len(result_set) > COUNT_VALUE:
-        result_set = result_set[0:-1]
+    result_set = result_set[0:COUNT_VALUE]
     count = len(result_set)
     results = {
         'results': result_set, 'count': count, 'next': next_token
     }
-    return make_response(json.dumps(results), 200,
-        {'Content-Type': 'application/json'})
+    return make_response(
+            json.dumps(results), 200,
+            {'Content-Type': 'application/json'})

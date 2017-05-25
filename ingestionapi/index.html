@@ -11,6 +11,9 @@
                // Let us open a web socket
                var ws = new WebSocket("ws://localhost:8765/echo");
                var bufsize = 200;
+               ws.onopen = function (evt) {
+                  document.body.innerHTML = "Connected!"
+               }
                ws.onmessage = function (evt) 
                { 
                   var received_msg = evt.data;

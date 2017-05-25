@@ -1,0 +1,45 @@
+<!DOCTYPE HTML>
+<html>
+   <head>
+      <script type="text/javascript">
+
+         function makeWebsocketsGo()
+         {
+            // There has to be a better way, right?
+            if ("WebSocket" in window)
+            {
+               // Let us open a web socket
+               var ws = new WebSocket("ws://localhost:8765/echo");
+               var bufsize = 200;
+               ws.onmessage = function (evt) 
+               { 
+                  var received_msg = evt.data;
+                  arr = document.body.innerHTML.split("<br>");
+                  // Let's just cap the number of lines we will display to avoid scrolling indefinitely.
+                  if (arr.length >= bufsize) {
+                      arr.pop();
+                  } 
+                  // We display messages from new to old.
+                  document.body.innerHTML = received_msg + "<br />" + arr.join("<br>");
+
+               };
+               ws.onclose = function()
+               { 
+                   // Websocket is closed.
+                   // Ask the user to hit refresh if they're still interested in logs.
+                   alert("Web socket connection closed. Please refresh");
+               }
+            }
+            else
+            {
+               alert("WebSockets are not supported :(");
+            }
+         }
+      </script>
+		
+   </head>
+   <body>
+        <a href="javascript:makeWebsocketsGo()">Click for logs</a>
+   </body>
+</html>
+

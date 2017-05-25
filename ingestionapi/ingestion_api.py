@@ -69,8 +69,16 @@ def make_error_response(msg, code, status):
 @app.route('/dummy', methods=['POST'])
 @auto.doc()
 def create_dummy():
-    """Create a dummy document. On success this will return 202 to
-    indicate that the document has been accepted for processing."""
+    """
+    Create a dummy document. On success this will return 202 to
+    indicate that the document has been accepted for processing.
+
+    This endpoint takes a POST data field called "data", which
+    is a JSON encoded document. Example request:
+
+    create_api = 'http://127.0.0.1:6000/dummy'
+    requests.post(create_api, data={'data': json.dumps({'testdatum': 'a'})})
+    """
     try:
         data = json.loads(request.form['data'])
         enqueue_task(request.form['data'])

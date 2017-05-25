@@ -21,6 +21,7 @@ logger = structlog.get_logger()
 
 # Config
 
+
 class DefaultSettings(object):
 
     REDIS_TOPIC = os.environ.get('REDIS_TOPIC') or "blah"
